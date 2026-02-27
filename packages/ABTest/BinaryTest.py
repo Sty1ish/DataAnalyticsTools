@@ -127,11 +127,11 @@ def is_NormalApproximation(na, nb, pa, pb):
         return True
 
 
-def two_group_proportion_test(data,
-                              group_col='group',
-                              target_col='is_purchase',
-                              alternative='two-sided',
-                              alpha=0.05):
+def two_group_proportion_test_from_data(data,
+                                        group_col='group',
+                                        target_col='is_purchase',
+                                        alternative='two-sided',
+                                        alpha=0.05):
     """
     두 집단 비율 차이에 대한 Z-검정 (정규근사를 기반으로 하고 있어, 정규성 근사 조건이 만족되어야 함)
     기본적으로는 양측 검정을 전제에 두고 있음 (alternative='two-sided'), 단측 검정도 가능 (alternative='smaller' or 'larger')
@@ -178,6 +178,108 @@ def two_group_proportion_test(data,
         test_statistics = fisher_exact_test(xa, xb, na, nb, alpha, alternative)
 
     # 검정 방식에 따른 통계량 값 분할
+    z = test_statistics['statistic']
+    p_value = test_statistics['p_value']
+    (a_lower, a_upper) = test_statistics['ci_a']
+    (b_lower, b_upper) = test_statistics['ci_b']
+    (diff_lower, diff_upper) = test_statistics['ci_diff']
+
+    # 검정 결과 출력
+    if alternative == "two-sided":
+        H0 = f"p({groupA_label}) = p({groupB_label})"
+        H1 = f"p({groupA_label}) ≠ p({groupB_label})"
+
+    elif alternative == "smaller":
+        H0 = f"p({groupA_label}) ≥ p({groupB_label})"
+        H1 = f"p({groupA_label}) < p({groupB_label})"
+
+    elif alternative == "larger":
+        H0 = f"p({groupA_label}) ≤ p({groupB_label})"
+        H1 = f"p({groupA_label}) > p({groupB_label})"
+
+    if test_statistics['statistic_type'] == 'z':
+        HEADER = "Two-Proportion Z-Test가 수행되었습니다"
+        CALC_INTERVAL_METHOD = "Wald score interval"
+
+    elif test_statistics['statistic_type'] == 'odds_ratio':
+        HEADER = "Fisher's Exact Test가 수행되었습니다 (정규성 근사 조건 미 충족)"
+        CALC_INTERVAL_METHOD = "Wilson score interval"
+
+    else:
+        HEADER = "알 수 없는 검정 방식이 수행되었습니다"
+        CALC_INTERVAL_METHOD = "알 수 없음"
+
+    print(f"""
+          {HEADER}
+            ------------------------------------------------
+            이표본 {'양측' if alternative == 'two-sided' else '단측'} 비율 검정 결과
+            ------------------------------------------------
+            유의수준 α = {alpha}   신뢰수준 = {(1-alpha)*100:.1f}%
+
+            그룹 A: {groupA_label} (n={na}, x={xa}, p={pa:.4f} {str((1-alpha) * 100)}% CI: {a_lower:.4f} ~ {a_upper:.4f})
+            그룹 B: {groupB_label} (n={nb}, x={xb}, p={pb:.4f} {str((1-alpha) * 100)}% CI: {b_lower:.4f} ~ {b_upper:.4f})
+            * 신뢰구간은 {CALC_INTERVAL_METHOD} 방법으로 계산 되었습니다
+            ------------------------------------------------
+            H0: {H0}
+            H1: {H1}
+            diff : {pa - pb:.4f} ({str((1-alpha) * 100)}% CI: {diff_lower:.4f} ~ {diff_upper:.4f}) | p-value = {p_value:.5f}
+            결론: {"귀무가설 기각" if p_value < alpha else "귀무가설 기각 실패"}
+            ------------------------------------------------
+          """)
+
+    # visualize
+    # visualize
+    plt.figure(figsize=(10, 3))
+    plt.ylim(-0.5, 1.5)
+    # A 그룹
+    plt.errorbar(x=pa*100,
+                 y=0,
+                 xerr=[[(pa - a_lower) * 100], [(a_upper - pa) * 100]],
+                 fmt='o--',
+                 capsize=5,
+                 color='blue'
+                 )
+    # B 그룹
+    plt.errorbar(x=pb * 100,
+                 y=1,
+                 xerr=[[(pb - b_lower) * 100], [(b_upper - pb) * 100]],
+                 fmt='o--',
+                 capsize=5,
+                 color='red'
+                 )
+    plt.yticks(range(2), [groupA_label, groupB_label])
+    plt.title(f'Conversion Rate ({str((1-alpha) * 100)}% Confidence Level)')
+    plt.xlabel('Conversion Rate (%)')
+    plt.ylabel('Group')
+    plt.show()
+
+    return {
+        "z": z,
+        "p_value": p_value,
+        "label_a": groupA_label,
+        "pa": pa,
+        "label_b": groupB_label,
+        "pb": pb,
+        "ci_a": (a_lower, a_upper),
+        "ci_b": (b_lower, b_upper),
+    }
+
+
+def two_group_proportion_test_from_summary(xa, xb,
+                                           na, nb,
+                                           alpha=0.05,
+                                           alternative='two-sided'):
+    groupA_label = "A"
+    groupB_label = "B"
+    pa = xa / na
+    pb = xb / nb
+
+    if is_NormalApproximation(na, nb, pa, pb):
+        test_statistics = z_test_proportions(
+            xa, xb, na, nb, alpha, alternative)
+    else:
+        test_statistics = fisher_exact_test(xa, xb, na, nb, alpha, alternative)
+        # 검정 방식에 따른 통계량 값 분할
     z = test_statistics['statistic']
     p_value = test_statistics['p_value']
     (a_lower, a_upper) = test_statistics['ci_a']
