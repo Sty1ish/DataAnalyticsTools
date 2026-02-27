@@ -28,15 +28,15 @@ def _draw_sample_size_curve_known_N(draw_type='proportion', **kwargs):
         p = kwargs.get('p')
         e = kwargs.get('e')
         confidence_level = kwargs.get('confidence_level')
+        default_sample_size = kwargs.get('default_sample_size')
 
         # 필수 파라미터 검증
-        if p is None or e is None or confidence_level is None:
+        if p is None or e is None or confidence_level is None or default_sample_size is None:
             raise ValueError(
-                "'p', 'e', and 'confidence_level' are required for proportion type")
+                "'p', 'e', 'confidence_level', and 'default_sample_size' are required for proportion type")
 
         # 플롯을 위한 값 연산
         z_value = norm.ppf((1 + confidence_level) / 2)
-        default_sample_size = _proportion_estimate_sample_size(p, e, z_value)
 
         # 허용하는 에러 범위
         error_range = [i for i in np.arange((e * 0.1), (e * 3), (e * 0.01))]
@@ -56,15 +56,15 @@ def _draw_sample_size_curve_known_N(draw_type='proportion', **kwargs):
         sigma = kwargs.get('sigma')
         e = kwargs.get('e')
         confidence_level = kwargs.get('confidence_level')
+        default_sample_size = kwargs.get('default_sample_size')
 
         # 필수 파라미터 검증
-        if sigma is None or e is None or confidence_level is None:
+        if sigma is None or e is None or confidence_level is None or default_sample_size is None:
             raise ValueError(
-                "'sigma', 'e', and 'confidence_level' are required for mean type")
+                "'sigma', 'e', 'confidence_level', and 'default_sample_size' are required for mean type")
 
         # 플롯을 위한 값 연산
         z_value = norm.ppf((1 + confidence_level) / 2)
-        default_sample_size = _mean_estimate_sample_size(sigma, e, z_value)
 
         # 허용하는 에러 범위
         error_range = [i for i in np.arange((e * 0.1), (e * 3), (e * 0.01))]
@@ -138,7 +138,9 @@ def sample_size_proportion(p=0.5,
             p=p,
             e=error,
             confidence_level=confidence_level,
-            population_size=population_size)
+            population_size=population_size,
+            default_sample_size=sample_size
+        )
     return sample_size
 
 
@@ -171,6 +173,7 @@ def sample_size_mean(sigma,
             sigma=sigma,
             e=error,
             confidence_level=confidence_level,
-            population_size=population_size)
+            population_size=population_size,
+            default_sample_size=sample_size)
 
     return sample_size
