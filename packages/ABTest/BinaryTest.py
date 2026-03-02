@@ -189,11 +189,11 @@ def two_group_proportion_test_from_data(data,
         H0 = f"p({groupA_label}) = p({groupB_label})"
         H1 = f"p({groupA_label}) ≠ p({groupB_label})"
 
-    elif alternative == "smaller":
+    elif alternative == "less":
         H0 = f"p({groupA_label}) ≥ p({groupB_label})"
         H1 = f"p({groupA_label}) < p({groupB_label})"
 
-    elif alternative == "larger":
+    elif alternative == "greater":
         H0 = f"p({groupA_label}) ≤ p({groupB_label})"
         H1 = f"p({groupA_label}) > p({groupB_label})"
 
@@ -364,4 +364,6 @@ def two_group_proportion_test_from_summary(xa, xb,
         "pb": pb,
         "ci_a": (a_lower, a_upper),
         "ci_b": (b_lower, b_upper),
+        "diff": pa - pb,
+        "diff_ci": (diff_lower, diff_upper)
     }
